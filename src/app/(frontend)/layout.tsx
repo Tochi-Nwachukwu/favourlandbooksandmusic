@@ -1,21 +1,22 @@
-import { Cormorant_Garamond, Inter } from 'next/font/google'
+import { Alex_Brush, Poppins } from 'next/font/google'
 import Link from 'next/link'
 import React from 'react'
 
 import { CartCount, CartProvider } from '@/components/cart'
+import { CookieNotice, CtaBand, MobileMenuCloser } from '@/components/SiteChrome'
 import { getPayloadClient } from '@/lib/payload'
 import './styles.css'
 
-const serif = Cormorant_Garamond({
+const sans = Poppins({
   subsets: ['latin'],
-  weight: ['500', '600', '700'],
-  variable: '--font-serif',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-sans',
 })
-const sans = Inter({ subsets: ['latin'], variable: '--font-sans' })
+const script = Alex_Brush({ subsets: ['latin'], weight: '400', variable: '--font-script' })
 
 export const metadata = {
   title: {
-    default: 'Favour Land Christian Books and Music',
+    default: "Favour Land Christian Books and Music – Explore the wonderful riches of God's word",
     template: '%s – Favour Land Christian Books and Music',
   },
   description:
@@ -23,31 +24,65 @@ export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'),
 }
 
-const NAV = [
-  { href: '/shop?category=books', label: 'Books' },
-  { href: '/shop?category=ebooks', label: 'Ebooks' },
-  { href: '/shop?category=songs', label: 'Music' },
-  { href: '/mentorship', label: 'Mentorship' },
-  { href: '/testimonies', label: 'Testimonies' },
-  { href: '/about-us', label: 'About' },
-  { href: '/contact-us', label: 'Contact' },
-]
+type NavItem = { href: string; label: string; external?: boolean; children?: NavItem[] }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const payload = await getPayloadClient()
-  const [settings, footerPages] = await Promise.all([
+  const [settings, footerPages, categories] = await Promise.all([
     payload.findGlobal({ slug: 'site-settings', depth: 0 }),
     payload.find({
       collection: 'pages',
       where: { showInFooter: { equals: true }, published: { equals: true } },
       depth: 0,
       limit: 20,
+      sort: 'sortOrder',
+      select: { title: true, slug: true },
+    }),
+    payload.find({
+      collection: 'categories',
+      where: { slug: { not_equals: 'mentorship' } },
+      sort: 'sortOrder',
+      depth: 0,
+      limit: 20,
       select: { title: true, slug: true },
     }),
   ])
 
+  const nav: NavItem[] = [
+    { href: '/', label: 'Welcome' },
+    {
+      href: '/about-us',
+      label: 'About us',
+      children: [
+        { href: '/testimonies', label: 'Testimonies' },
+        { href: '/terms-and-conditions', label: 'FLP Terms and Conditions' },
+      ],
+    },
+    {
+      href: '/shop',
+      label: 'Online Store',
+      children: categories.docs.map((c) => ({ href: `/shop?category=${c.slug}`, label: c.title })),
+    },
+    {
+      href: '/mentorship',
+      label: 'Mentorship',
+      children: [1, 2, 3].map((n) => ({ href: `/mentorship-tier-${n}`, label: `Mentorship – Tier ${n}` })),
+    },
+    { href: '/contact-us', label: 'Contact us' },
+    { href: 'https://www.rormi.org.uk/', label: 'RORMI', external: true },
+  ]
+
+  const navLink = (n: NavItem) =>
+    n.external ? (
+      <a href={n.href} target="_blank" rel="noopener noreferrer">
+        {n.label}
+      </a>
+    ) : (
+      <Link href={n.href}>{n.label}</Link>
+    )
+
   return (
-    <html lang="en-GB" className={`${serif.variable} ${sans.variable}`}>
+    <html lang="en-GB" className={`${sans.variable} ${script.variable}`}>
       <body>
         <CartProvider>
           <a className="skip-link" href="#main">
@@ -56,29 +91,29 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <header className="site-header">
             <div className="container header-inner">
               <Link href="/" className="brand">
-                <span className="brand-mark" aria-hidden>
-                  FL
-                </span>
-                <span className="brand-text">
-                  <strong>Favour Land</strong>
-                  <small>Christian Books &amp; Music</small>
-                </span>
+                Favour Land Christian Books and Music
               </Link>
               <input type="checkbox" id="nav-toggle" className="nav-toggle" aria-label="Open menu" />
               <label htmlFor="nav-toggle" className="nav-burger" aria-hidden>
                 <span />
               </label>
               <nav className="main-nav" aria-label="Main">
-                {NAV.map((n) => (
-                  <Link key={n.href} href={n.href}>
-                    {n.label}
-                  </Link>
-                ))}
+                <ul className="menu">
+                  {nav.map((n) => (
+                    <li key={n.href} className={n.children?.length ? 'has-sub' : undefined}>
+                      {navLink(n)}
+                      {!!n.children?.length && (
+                        <ul className="sub-menu">
+                          {n.children.map((c) => (
+                            <li key={c.href}>{navLink(c)}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </nav>
               <div className="header-actions">
-                <Link href="/shop" className="btn btn-small btn-ghost hide-sm">
-                  Shop
-                </Link>
                 <Link href="/cart" className="cart-link" aria-label="Basket">
                   <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
                     <path
@@ -97,55 +132,36 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </div>
             </div>
           </header>
+          <MobileMenuCloser />
 
           <main id="main">{children}</main>
 
+          <CtaBand text={settings.mentorshipCta || 'Join the Glory and Wisdom Mentorship Programme today!'} />
+
           <footer className="site-footer">
-            <div className="container footer-grid">
-              <div>
-                <p className="footer-brand">{settings.siteName}</p>
-                <p className="muted">
-                  The online home of {settings.companyName}. Anointed books, music and Spirit-filled mentorship to
-                  build your faith.
-                </p>
-              </div>
-              <div>
-                <h4>Contact</h4>
-                {settings.phone && <p>{settings.phone}</p>}
-                {settings.email && (
-                  <p>
-                    <a href={`mailto:${settings.email}`}>{settings.email}</a>
-                  </p>
-                )}
-                {settings.address && <p className="muted pre">{settings.address}</p>}
-              </div>
-              <div>
-                <h4>Information</h4>
-                <ul className="plain">
-                  {footerPages.docs.map((p) => (
-                    <li key={p.id}>
-                      <Link href={`/${p.slug}`}>{p.title}</Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4>Follow us</h4>
-                <ul className="plain">
-                  {settings.socialLinks?.map((s) => (
-                    <li key={s.id}>
-                      <a href={s.url} target="_blank" rel="noopener noreferrer">
-                        {s.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-            <div className="container footer-bottom">
-              © {new Date().getFullYear()} {settings.companyName}. All rights reserved.
+            <div className="container">
+              <ul className="footer-links">
+                {footerPages.docs.map((p) => (
+                  <li key={p.id}>
+                    <Link href={`/${p.slug}`}>{p.title}</Link>
+                  </li>
+                ))}
+              </ul>
+              <p className="footer-meta">
+                {settings.phone && <a href={`tel:${settings.phone.replace(/\s+/g, '')}`}>{settings.phone}</a>}
+                {settings.email && <a href={`mailto:${settings.email}`}>{settings.email}</a>}
+                {settings.socialLinks?.map((s) => (
+                  <a key={s.id} href={s.url} target="_blank" rel="noopener noreferrer">
+                    {s.label}
+                  </a>
+                ))}
+              </p>
+              <p className="footer-bottom">
+                © {new Date().getFullYear()} {settings.companyName}. All rights reserved.
+              </p>
             </div>
           </footer>
+          <CookieNotice />
         </CartProvider>
       </body>
     </html>

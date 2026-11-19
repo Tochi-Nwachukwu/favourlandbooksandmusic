@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import type { Where } from 'payload'
 
+import { HERO_IMAGES, PageHero } from '@/components/PageHero'
 import { ProductGrid } from '@/components/ProductCard'
 import { getPayloadClient } from '@/lib/payload'
 
-export const metadata = { title: 'Shop' }
+export const metadata = { title: 'Online Store' }
 
 const PER_PAGE = 24
 
@@ -39,49 +40,63 @@ export default async function ShopPage({
   }
 
   return (
-    <div className="container section">
-      <header className="page-head">
-        <p className="eyebrow">Online store</p>
-        <h1>{active ? active.title : 'All books & music'}</h1>
-        {active?.description && <p className="lead">{active.description}</p>}
-      </header>
+    <>
+      <PageHero tagline="Explore our rich resources" image={HERO_IMAGES.store} />
 
-      <div className="shop-toolbar">
-        <nav className="pill-nav" aria-label="Categories">
-          <Link href="/shop" className={!active ? 'pill active' : 'pill'}>
-            All
-          </Link>
-          {categories.docs.map((c) => (
-            <Link
-              key={c.id}
-              href={`/shop?category=${c.slug}`}
-              className={active?.id === c.id ? 'pill active' : 'pill'}
-            >
-              {c.title}
+      <div className="container section shop-wrap">
+        <header className="page-head">
+          <h1 className="script-title">Online Store</h1>
+          {active?.description && <p className="lead center">{active.description}</p>}
+        </header>
+
+        <div className="shop-toolbar">
+          <nav className="pill-nav" aria-label="Categories">
+            <Link href="/shop" className={!active ? 'pill active' : 'pill'} aria-current={!active ? 'page' : undefined}>
+              All
             </Link>
-          ))}
-        </nav>
-        <form className="search" action="/shop">
-          {active && <input type="hidden" name="category" value={active.slug ?? ''} />}
-          <input type="search" name="q" placeholder="Search titles…" defaultValue={q} aria-label="Search" />
-        </form>
+            {categories.docs.map((c) => (
+              <Link
+                key={c.id}
+                href={`/shop?category=${c.slug}`}
+                className={active?.id === c.id ? 'pill active' : 'pill'}
+                aria-current={active?.id === c.id ? 'page' : undefined}
+              >
+                {c.title}
+              </Link>
+            ))}
+          </nav>
+          <form className="search" action="/shop" role="search">
+            {active && <input type="hidden" name="category" value={active.slug ?? ''} />}
+            <input type="search" name="q" placeholder="Search titles…" defaultValue={q} aria-label="Search titles" />
+            <button type="submit" className="btn btn-dark">
+              Search
+            </button>
+          </form>
+        </div>
+
+        {q?.trim() && (
+          <p className="muted">
+            {result.totalDocs} result{result.totalDocs === 1 ? '' : 's'} for “{q.trim()}”
+            {active ? ` in ${active.title}` : ''} · <Link href={href({ q: undefined, page: undefined })}>Clear search</Link>
+          </p>
+        )}
+
+        {result.docs.length ? (
+          <ProductGrid products={result.docs} />
+        ) : (
+          <p className="empty-state">No products found.</p>
+        )}
+
+        {result.totalPages > 1 && (
+          <nav className="pagination" aria-label="Pages">
+            {result.hasPrevPage && <Link href={href({ page: result.prevPage! })}>← Previous</Link>}
+            <span>
+              Page {result.page} of {result.totalPages}
+            </span>
+            {result.hasNextPage && <Link href={href({ page: result.nextPage! })}>Next →</Link>}
+          </nav>
+        )}
       </div>
-
-      {result.docs.length ? (
-        <ProductGrid products={result.docs} />
-      ) : (
-        <p className="empty-state">No products found.</p>
-      )}
-
-      {result.totalPages > 1 && (
-        <nav className="pagination" aria-label="Pages">
-          {result.hasPrevPage && <Link href={href({ page: result.prevPage! })}>← Previous</Link>}
-          <span>
-            Page {result.page} of {result.totalPages}
-          </span>
-          {result.hasNextPage && <Link href={href({ page: result.nextPage! })}>Next →</Link>}
-        </nav>
-      )}
-    </div>
+    </>
   )
 }

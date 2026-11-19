@@ -51,7 +51,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           published: { equals: true },
         },
         sort: 'sortOrder',
-        limit: 4,
+        limit: 3,
         depth: 1,
       })
     : null
@@ -127,7 +127,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       {related && related.docs.length > 0 && (
         <section className="section">
           <div className="section-head">
-            <h2>You may also like</h2>
+            <h2>Related products</h2>
           </div>
           <ProductGrid products={related.docs} />
         </section>

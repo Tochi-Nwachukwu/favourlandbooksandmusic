@@ -106,6 +106,31 @@ export function CartCount() {
   return <span className="cart-count">{count}</span>
 }
 
+/** Compact "Buy now" button for product cards: adds one to the basket, then links to it. */
+export function QuickAddButton({ product, disabled }: { product: Omit<CartItem, 'quantity'>; disabled?: boolean }) {
+  const { add, items, ready } = useCart()
+  const inCart = ready && items.some((i) => i.id === product.id)
+
+  if (inCart) {
+    return (
+      <a className="btn btn-primary quick-add" href="/cart">
+        In basket – view
+      </a>
+    )
+  }
+  return (
+    <button
+      type="button"
+      className="btn btn-dark quick-add"
+      disabled={disabled}
+      onClick={() => add(product)}
+      aria-label={`Buy ${product.title} now – add to basket`}
+    >
+      {disabled ? 'Out of stock' : 'Buy now'}
+    </button>
+  )
+}
+
 export function AddToCartButton({
   product,
   disabled,

@@ -17,8 +17,13 @@ export const coverOf = (product: Product): Media | undefined => {
   return first && typeof first === 'object' ? first : undefined
 }
 
-export const imageUrl = (media: Media | undefined, size: 'thumbnail' | 'card' | 'large' = 'card') =>
-  media?.sizes?.[size]?.url || media?.url || undefined
+const SITE_ORIGIN = process.env.NEXT_PUBLIC_SERVER_URL?.replace(/\/$/, '')
+
+/** Same-site media URLs are returned relative, so images work whichever host/port serves the site. */
+export const imageUrl = (media: Media | undefined, size: 'thumbnail' | 'card' | 'large' = 'card') => {
+  const url = media?.sizes?.[size]?.url || media?.url || undefined
+  return url && SITE_ORIGIN && url.startsWith(`${SITE_ORIGIN}/`) ? url.slice(SITE_ORIGIN.length) : url
+}
 
 export const FORMAT_LABEL: Record<Product['format'], string> = {
   physical: 'Posted from the UK',
