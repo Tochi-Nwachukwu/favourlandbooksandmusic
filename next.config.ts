@@ -13,6 +13,19 @@ const nextConfig: NextConfig = {
         pathname: '/api/media/file/**',
       },
     ],
+    remotePatterns: [{ protocol: 'https', hostname: '*.public.blob.vercel-storage.com' }],
+  },
+  // Keep links from Google and old bookmarks to the WordPress site working
+  async redirects() {
+    return [
+      { source: '/product-category/:slug/:rest*', destination: '/shop?category=:slug', permanent: true },
+      { source: '/online-store-books', destination: '/shop?category=books', permanent: true },
+      { source: '/online-store-ebooks', destination: '/shop?category=ebooks', permanent: true },
+      { source: '/online-store-songs', destination: '/shop?category=songs', permanent: true },
+      { source: '/online-store-souvenirs', destination: '/shop?category=souvenirs', permanent: true },
+      { source: '/my-account/:rest*', destination: '/shop', permanent: false },
+      { source: '/blog', destination: '/', permanent: false },
+    ]
   },
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {

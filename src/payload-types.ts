@@ -67,8 +67,14 @@ export interface Config {
   };
   blocks: {};
   collections: {
-    users: User;
+    orders: Order;
+    products: Product;
+    categories: Category;
+    'digital-files': DigitalFile;
+    pages: Page;
     media: Media;
+    'mentorship-applications': MentorshipApplication;
+    users: User;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -76,19 +82,29 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
-    users: UsersSelect<false> | UsersSelect<true>;
+    orders: OrdersSelect<false> | OrdersSelect<true>;
+    products: ProductsSelect<false> | ProductsSelect<true>;
+    categories: CategoriesSelect<false> | CategoriesSelect<true>;
+    'digital-files': DigitalFilesSelect<false> | DigitalFilesSelect<true>;
+    pages: PagesSelect<false> | PagesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    'mentorship-applications': MentorshipApplicationsSelect<false> | MentorshipApplicationsSelect<true>;
+    users: UsersSelect<false> | UsersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'site-settings': SiteSetting;
+  };
+  globalsSelect: {
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -119,36 +135,165 @@ export interface UserAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
+ * via the `definition` "orders".
  */
-export interface User {
-  id: string;
+export interface Order {
+  id: number;
+  orderNumber: string;
+  status: 'pending' | 'paid' | 'dispatched' | 'completed' | 'cancelled' | 'refunded';
+  customer: {
+    name: string;
+    email: string;
+    phone?: string | null;
+  };
+  shippingAddress?: {
+    line1?: string | null;
+    line2?: string | null;
+    city?: string | null;
+    postcode?: string | null;
+    country?: string | null;
+  };
+  items: {
+    product?: (number | null) | Product;
+    title: string;
+    format?: string | null;
+    unitPrice: number;
+    quantity: number;
+    id?: string | null;
+  }[];
+  subtotal: number;
+  shippingCost?: number | null;
+  total: number;
+  currency?: string | null;
+  shippingMethod?: string | null;
+  /**
+   * Royal Mail tracking number once posted.
+   */
+  trackingNumber?: string | null;
+  notes?: string | null;
+  paypal?: {
+    orderId?: string | null;
+    captureId?: string | null;
+    payerEmail?: string | null;
+  };
+  accessToken?: string | null;
   updatedAt: string;
   createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'users';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: number;
+  title: string;
+  price: number;
+  /**
+   * Optional. Shown crossed out when it is higher than the price.
+   */
+  compareAtPrice?: number | null;
+  format: 'physical' | 'digital' | 'service';
+  /**
+   * The first image is the cover shown in the shop.
+   */
+  images?: (number | Media)[] | null;
+  /**
+   * One or two sentences shown under the title.
+   */
+  excerpt?: string | null;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * The ebook / music file the customer receives after paying.
+   */
+  digitalFile?: (number | null) | DigitalFile;
+  published?: boolean | null;
+  inStock?: boolean | null;
+  featured?: boolean | null;
+  /**
+   * Used in the web address. Filled automatically.
+   */
+  slug?: string | null;
+  categories?: (number | Category)[] | null;
+  /**
+   * Lower numbers appear first.
+   */
+  sortOrder?: number | null;
+  wooId?: number | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
-  alt: string;
+  id: number;
+  alt?: string | null;
+  prefix?: string | null;
+  _objectKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    large?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * Ebook and music files customers receive after paying. These are never public.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "digital-files".
+ */
+export interface DigitalFile {
+  id: number;
+  label?: string | null;
+  prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -163,10 +308,132 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Category {
+  id: number;
+  title: string;
+  /**
+   * Used in the web address. Filled automatically.
+   */
+  slug?: string | null;
+  description?: string | null;
+  parent?: (number | null) | Category;
+  /**
+   * Lower numbers appear first in the shop menu.
+   */
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages".
+ */
+export interface Page {
+  id: number;
+  title: string;
+  /**
+   * Small heading shown above the title, e.g. "ROOTED IN GOD’S WORD".
+   */
+  tagline?: string | null;
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Web address, e.g. "about-us" → /about-us
+   */
+  slug: string;
+  published?: boolean | null;
+  showInFooter?: boolean | null;
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mentorship-applications".
+ */
+export interface MentorshipApplication {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  gender?: ('Male' | 'Female') | null;
+  address?: string | null;
+  city?: string | null;
+  zip?: string | null;
+  country?: string | null;
+  birthday?: string | null;
+  reasons?:
+    | (
+        | 'Need guidance'
+        | 'Want to grow spiritually'
+        | 'Want self-improvement'
+        | 'Want marital counsel'
+        | 'Want to become an effective leader'
+        | 'Want to develop leadership skills'
+        | 'Want to develop new skills or improve current skills'
+        | 'Want to become a writer or published Author'
+        | 'Want help with post-publishing e.g. Book Launch, etc.'
+        | 'Want to write Christian songs'
+        | 'Want to become a Christian recording Artist'
+        | 'Want to become an effective mentor'
+      )[]
+    | null;
+  discoveredVia?:
+    ('Instagram' | 'Facebook' | 'Online Advert' | 'Friend / Family' | 'Church' | 'Amazon' | 'YouTube') | null;
+  companions?: string | null;
+  suggestedTier?: ('1' | '2' | '3') | null;
+  status?: ('new' | 'contacted' | 'enrolled' | 'closed') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users".
+ */
+export interface User {
+  id: number;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'users';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -183,20 +450,44 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
-        relationTo: 'users';
-        value: string | User;
+        relationTo: 'orders';
+        value: number | Order;
+      } | null)
+    | ({
+        relationTo: 'products';
+        value: number | Product;
+      } | null)
+    | ({
+        relationTo: 'categories';
+        value: number | Category;
+      } | null)
+    | ({
+        relationTo: 'digital-files';
+        value: number | DigitalFile;
+      } | null)
+    | ({
+        relationTo: 'pages';
+        value: number | Page;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'mentorship-applications';
+        value: number | MentorshipApplication;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -206,10 +497,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   key?: string | null;
   value?:
@@ -229,11 +520,210 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders_select".
+ */
+export interface OrdersSelect<T extends boolean = true> {
+  orderNumber?: T;
+  status?: T;
+  customer?:
+    | T
+    | {
+        name?: T;
+        email?: T;
+        phone?: T;
+      };
+  shippingAddress?:
+    | T
+    | {
+        line1?: T;
+        line2?: T;
+        city?: T;
+        postcode?: T;
+        country?: T;
+      };
+  items?:
+    | T
+    | {
+        product?: T;
+        title?: T;
+        format?: T;
+        unitPrice?: T;
+        quantity?: T;
+        id?: T;
+      };
+  subtotal?: T;
+  shippingCost?: T;
+  total?: T;
+  currency?: T;
+  shippingMethod?: T;
+  trackingNumber?: T;
+  notes?: T;
+  paypal?:
+    | T
+    | {
+        orderId?: T;
+        captureId?: T;
+        payerEmail?: T;
+      };
+  accessToken?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products_select".
+ */
+export interface ProductsSelect<T extends boolean = true> {
+  title?: T;
+  price?: T;
+  compareAtPrice?: T;
+  format?: T;
+  images?: T;
+  excerpt?: T;
+  description?: T;
+  digitalFile?: T;
+  published?: T;
+  inStock?: T;
+  featured?: T;
+  slug?: T;
+  categories?: T;
+  sortOrder?: T;
+  wooId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories_select".
+ */
+export interface CategoriesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  description?: T;
+  parent?: T;
+  sortOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "digital-files_select".
+ */
+export interface DigitalFilesSelect<T extends boolean = true> {
+  label?: T;
+  prefix?: T;
+  _objectKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages_select".
+ */
+export interface PagesSelect<T extends boolean = true> {
+  title?: T;
+  tagline?: T;
+  content?: T;
+  slug?: T;
+  published?: T;
+  showInFooter?: T;
+  sortOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media_select".
+ */
+export interface MediaSelect<T extends boolean = true> {
+  alt?: T;
+  prefix?: T;
+  _objectKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        card?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        large?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mentorship-applications_select".
+ */
+export interface MentorshipApplicationsSelect<T extends boolean = true> {
+  firstName?: T;
+  lastName?: T;
+  email?: T;
+  phone?: T;
+  gender?: T;
+  address?: T;
+  city?: T;
+  zip?: T;
+  country?: T;
+  birthday?: T;
+  reasons?: T;
+  discoveredVia?: T;
+  companions?: T;
+  suggestedTier?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -247,6 +737,7 @@ export interface UsersSelect<T extends boolean = true> {
   resetPasswordExpiration?: T;
   salt?: T;
   hash?: T;
+  resetPasswordRequestedAt?: T;
   loginAttempts?: T;
   lockUntil?: T;
   sessions?:
@@ -256,24 +747,6 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media_select".
- */
-export interface MediaSelect<T extends boolean = true> {
-  alt?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  url?: T;
-  thumbnailURL?: T;
-  filename?: T;
-  mimeType?: T;
-  filesize?: T;
-  width?: T;
-  height?: T;
-  focalX?: T;
-  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -314,6 +787,93 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  heroTagline?: string | null;
+  heroTitle?: string | null;
+  heroImage?: (number | null) | Media;
+  intro?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  mentorshipCta?: string | null;
+  siteName?: string | null;
+  companyName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  socialLinks?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Postage options offered at checkout for physical items. Digital-only orders never pay postage.
+   */
+  shippingMethods?:
+    | {
+        label: string;
+        price: number;
+        region: 'uk' | 'international';
+        enabled?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  heroTagline?: T;
+  heroTitle?: T;
+  heroImage?: T;
+  intro?: T;
+  mentorshipCta?: T;
+  siteName?: T;
+  companyName?: T;
+  email?: T;
+  phone?: T;
+  address?: T;
+  socialLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  shippingMethods?:
+    | T
+    | {
+        label?: T;
+        price?: T;
+        region?: T;
+        enabled?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
